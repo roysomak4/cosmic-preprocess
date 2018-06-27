@@ -3,8 +3,8 @@ This script uses the cosmic coding VCF file and Mutant export data (tsv) to gene
 
 #### Software requirements:
 - Python v2.7
-- progressbar2
-- sh
+- progressbar2 (python package; `pip install progressbar2`)
+- sh (python package; `pip install sh`)
 - Mac OSX (>=10.11) and Linux (Ubuntu 14, debian 9)
 
 Hardware requirements:
