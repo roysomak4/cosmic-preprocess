@@ -20,7 +20,7 @@ def process_cosmic_db(args):
     cosmic_export = args[1]
 
     # cosmic processed file
-    cosmic_output_file = "cosmic_processed.txt"
+    cosmic_output_file = "cosmic_processed.txt.gz"
 
     # process vcf file first
     unique_variants = {}
@@ -35,8 +35,11 @@ def process_cosmic_db(args):
 
 
 def process_vcf(vcf_file, unique_variants):
+    gz_decomp = get_gzip_app()
     print('Calculating file size...')
-    row_count = int(sh.bash("-c", "gunzip -c {0} | wc -l".format(vcf_file)))
+    row_count = int(sh.bash("-c", "{app} {vcf_file} | wc -l"
+                            .format(app=gz_decomp,
+                                    vcf_file=vcf_file)))
     print('Parsing coding cosmic VCF file...')
     counter = 0
     with progressbar.ProgressBar(max_value=row_count) as pbar:
@@ -55,14 +58,7 @@ def process_mut_export(filename, sites):
     sites_file = 'sites.tmp'
     print('Preprocessing cosmic mutant export file...')
     # check operating system
-    gz_decomp = ""
-    if sys.platform.startswith("linux"):
-        gz_decomp = "zcat"
-    elif sys.platform.startswith("darwin"):
-        gz_decomp = "gunzip -c"
-    else:
-        pass
-
+    gz_decomp = get_gzip_app()
     sh.bash("-c", "{app} {filename} | cut -f 7,8,17 >{sites_file}"
                   .format(app=gz_decomp,
                           filename=filename, 
@@ -97,7 +93,7 @@ def process_mut_export(filename, sites):
 
 def get_sites_per_variant(unique_variants, sites, output_file):
     print ('Processing unique variants and associated sites...')
-    with open(output_file, 'w') as outf:
+    with gzip.open(output_file, 'wb') as outf:
         # output buffer before writing to file
         outbuffer = []
         buffer_cap = 10000
@@ -144,8 +140,19 @@ def get_sites_per_variant(unique_variants, sites, output_file):
         print('Cosmic files processed. Cosmic mutation and site counts written to {0}.'.format(output_file)) 
         
 
+def get_gzip_app():
+    gz_app = ''
+    if sys.platform.startswith("linux"):
+        gz_app = "zcat"
+    elif sys.platform.startswith("darwin"):
+        gz_app = "gunzip -c"
+    else:
+        pass
+    return gz_app
+
+
 def read_vcf(vcf_file):
-    with gzip.open(vcf_file, 'r') as vcf:
+    with gzip.open(vcf_file, 'rb') as vcf:
         for line in vcf:
             if not line.startswith('#'):
                 yield line
