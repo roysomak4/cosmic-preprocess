@@ -10,7 +10,8 @@ import progressbar
 def process_cosmic_db(args):
     if len(args) < 2:
         print ('Insufficient arguments.')
-        print('Expected: python process_cosmic_data.py <cosmic_coding.vcf.gz> <cosmic_mutant_export.tsv.gz>')
+        print('Expected: python process_cosmic_data.py <cosmic_coding.vcf.gz> <cosmic_mutant_export.tsv.gz><truncate large variant [true or false]>')
+        print ('Truncate large variant is optional. Default = False. If true, removes variants with ref or alt fields >1000bp in size')
         sys.exit(1)
 
     # COSMIC coding mut VCF file
@@ -19,12 +20,28 @@ def process_cosmic_db(args):
     # COSMIC mut export file
     cosmic_export = args[1]
 
+    # Truncate large variants beyond a defined size (default = 1000bp)
+    truncate_large_var = False
+    max_allele_len = 1000
+    if len(args) > 2:
+        truncate_var = args[2].lower()
+        if truncate_var == 'true':
+            truncate_large_var = True
+        elif truncate_var == 'false':
+            truncate_large_var = False
+        else:
+            print ('Invalid truncate variant argument.')
+            print('Expected: python process_cosmic_data.py <cosmic_coding.vcf.gz> <cosmic_mutant_export.tsv.gz><truncate large variant [true or false]>')
+            print ('Truncate large variant is optional. Default = False. If true, removes variants with ref or alt fields >1000bp in size')
+            sys.exit(1)
+
+
     # cosmic processed file
     cosmic_output_file = "cosmic_processed.txt.gz"
 
     # process vcf file first
     unique_variants = {}
-    process_vcf(cosmic_coding_vcf, unique_variants)
+    process_vcf(cosmic_coding_vcf, unique_variants, truncate_large_var, max_allele_len)
 
     # process mut export file
     sites = {}
@@ -34,7 +51,7 @@ def process_cosmic_db(args):
     get_sites_per_variant(unique_variants, sites, cosmic_output_file)
 
 
-def process_vcf(vcf_file, unique_variants):
+def process_vcf(vcf_file, unique_variants, truncate_large_var, max_allele_len):
     gz_decomp = get_gzip_app()
     print('Calculating file size...')
     row_count = int(sh.bash("-c", "{app} {vcf_file} | wc -l"
@@ -47,7 +64,13 @@ def process_vcf(vcf_file, unique_variants):
             temp_arr = vcf_entry.split('\t')
             variant = temp_arr[0] + ':' + temp_arr[1] + ':' + temp_arr[3] + ':' + temp_arr[4]
             cosmic_id = temp_arr[2]
-            unique_variants.setdefault(variant, []).append(cosmic_id)
+            # if truncation is activated filter variants with 
+            # ref or alt fields > max allele length
+            if truncate_large_var:
+                if len(temp_arr[3]) <= max_allele_len and len(temp_arr[4]) <= max_allele_len:
+                    unique_variants.setdefault(variant, []).append(cosmic_id)
+            else:
+                unique_variants.setdefault(variant, []).append(cosmic_id)
             counter += 1
             pbar.update(counter)
     print('Parsing complete.')
