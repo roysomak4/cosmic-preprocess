@@ -4,7 +4,6 @@ import os
 import gzip
 import sh
 import progressbar
-from numba import jit
 
 
 def process_cosmic_db(args):
@@ -50,7 +49,7 @@ def process_cosmic_db(args):
     # merge unique variants and sites count data and write to output file
     get_sites_per_variant(unique_variants, sites, cosmic_output_file)
 
-@jit(nopython=True)
+
 def process_vcf(vcf_file, unique_variants, truncate_large_var, max_allele_len):
     row_count = get_file_row_count(vcf_file)
     print('Parsing coding cosmic VCF file...')
@@ -71,7 +70,7 @@ def process_vcf(vcf_file, unique_variants, truncate_large_var, max_allele_len):
             pbar.update(counter)
     print('Parsing complete.')
     
-@jit(nopython=True)
+
 def process_mut_export(cosmic_export, sites):
     # run a shell command to create intermediate file
     sites_file = 'sites.tmp'
@@ -102,7 +101,7 @@ def process_mut_export(cosmic_export, sites):
     print('Removing temporary file...')
     sh.rm(sites_file)
     
-@jit(nopython=True)
+
 def get_sites_per_variant(unique_variants, sites, output_file):
     print ('Processing unique variants and associated sites...')
     with gzip.open(output_file, 'wb') as outf:
@@ -179,7 +178,6 @@ def generate_site_file(cosmic_export, sites_file):
     sh.bash("-c", f"{gz_decomp} {cosmic_export} | cut -f 7,8,17 >{sites_file}")
 
 
-@jit(nopython=True)
 def read_vcf(vcf_file):
     with gzip.open(vcf_file, 'rb') as vcf:
         for line in vcf:
@@ -187,7 +185,7 @@ def read_vcf(vcf_file):
             if not linestr.startswith('#'):
                 yield linestr
 
-@jit(nopython=True)
+
 def read_sites_file(filename):
     with open(filename, 'r') as input_file:
         for line in input_file:
