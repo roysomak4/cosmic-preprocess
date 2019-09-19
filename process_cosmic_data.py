@@ -105,7 +105,7 @@ def process_mut_export(filename, sites):
             pbar.update(counter)
     print('Parsing complete.')
     print('Removing temporary file...')
-    # sh.rm(sites_file)
+    sh.rm(sites_file)
     
 
 def get_sites_per_variant(unique_variants, sites, output_file):
@@ -142,7 +142,7 @@ def get_sites_per_variant(unique_variants, sites, output_file):
                 # check if outbuffer is full
                 if row_count > buffer_cap:
                     # write to file
-                    outf.write('\n'.join(outbuffer) + '\n')
+                    outf.write(('\n'.join(outbuffer) + '\n').encode('UTF-8'))
                     # clear the buffer
                     del outbuffer[:]
                     # reset row_count
@@ -154,7 +154,7 @@ def get_sites_per_variant(unique_variants, sites, output_file):
                 pbar.update(counter)
                 # print 'Progress: {0:.2f}%      \r'.format((counter/var_count) * 100),
         # write the last set of lines to the file
-        outf.write('\n'.join(outbuffer) + '\n')
+        outf.write(('\n'.join(outbuffer) + '\n').encode('UTF-8'))
         # clear the buffer
         del outbuffer[:]
         print(f'Cosmic files processed. Cosmic mutation and site counts written to {output_file}.')
