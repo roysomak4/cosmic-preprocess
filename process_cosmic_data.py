@@ -125,15 +125,15 @@ def get_sites_per_variant(unique_variants, sites, output_file):
                 var_line_ele.append(';'.join(ids))
                 # parse each of the cosmic ids to extract the site counts
                 temp_site_info = {}
-                print(variant)
-                print(ids)
                 for cosmic_id in ids:
-                    print(cosmic_id)
-                    for site, tumor_ids in sites[cosmic_id].items():
-                        if site in temp_site_info:
-                            temp_site_info[site] = temp_site_info[site] | tumor_ids
-                        else:
-                            temp_site_info[site] = tumor_ids
+                    if cosmic_id in sites:
+                        for site, tumor_ids in sites[cosmic_id].items():
+                            if site in temp_site_info:
+                                temp_site_info[site] = temp_site_info[site] | tumor_ids
+                            else:
+                                temp_site_info[site] = tumor_ids
+                    else:
+                        print(f'{cosmic_id} not found in sites dictionary')
                 # parse the temp_site_info
                 site_list = []
                 for site,tumor_ids in temp_site_info.items():
