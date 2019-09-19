@@ -1,4 +1,3 @@
-from __future__ import division 
 from collections import Counter
 import sys
 import os
@@ -54,9 +53,7 @@ def process_cosmic_db(args):
 def process_vcf(vcf_file, unique_variants, truncate_large_var, max_allele_len):
     gz_decomp = get_gzip_app()
     print('Calculating file size...')
-    row_count = int(sh.bash("-c", "{app} {vcf_file} | wc -l"
-                            .format(app=gz_decomp,
-                                    vcf_file=vcf_file)))
+    row_count = int(sh.bash("-c", f"{gz_decomp} {vcf_file} | wc -l"))
     print('Parsing coding cosmic VCF file...')
     counter = 0
     with progressbar.ProgressBar(max_value=row_count) as pbar:
@@ -82,12 +79,9 @@ def process_mut_export(filename, sites):
     print('Preprocessing cosmic mutant export file...')
     # check operating system
     gz_decomp = get_gzip_app()
-    sh.bash("-c", "{app} {filename} | cut -f 7,8,17 >{sites_file}"
-                  .format(app=gz_decomp,
-                          filename=filename, 
-                          sites_file=sites_file))
+    sh.bash("-c", f"{gz_decomp} {filename} | cut -f 7,8,17 >{sites_file}")
     print('Calculating file size...')
-    row_count = int(sh.bash("-c", "cat {0} | wc -l".format(sites_file)))
+    row_count = int(sh.bash("-c", f"cat {sites_file} | wc -l"))
     
     # parse the intermediate file
     print ('Parsing intermediate file...')
@@ -98,8 +92,8 @@ def process_mut_export(filename, sites):
             cosmic_id = temp_arr[2]
             site = temp_arr[1]
             tumor_id = temp_arr[0]
-            if sites.has_key(cosmic_id):
-                if sites[cosmic_id].has_key(site):
+            if cosmic_id in sites:
+                if site in sites[cosmic_id]:
                     sites[cosmic_id][site].add(tumor_id)
                 else:
                     sites[cosmic_id][site] = {tumor_id}
@@ -111,7 +105,7 @@ def process_mut_export(filename, sites):
             pbar.update(counter)
     print('Parsing complete.')
     print('Removing temporary file...')
-    sh.rm(sites_file)
+    # sh.rm(sites_file)
     
 
 def get_sites_per_variant(unique_variants, sites, output_file):
@@ -125,21 +119,24 @@ def get_sites_per_variant(unique_variants, sites, output_file):
         counter = 0
         var_count = len(unique_variants)
         with progressbar.ProgressBar(max_value=var_count) as pbar:
-            for variant, ids in unique_variants.iteritems():
+            for variant, ids in unique_variants.items():
                 # hold column element of each row in a list
                 var_line_ele = variant.split(':')
                 var_line_ele.append(';'.join(ids))
                 # parse each of the cosmic ids to extract the site counts
                 temp_site_info = {}
+                print(variant)
+                print(ids)
                 for cosmic_id in ids:
-                    for site, tumor_ids in sites[cosmic_id].iteritems():
-                        if temp_site_info.has_key(site):
+                    print(cosmic_id)
+                    for site, tumor_ids in sites[cosmic_id].items():
+                        if site in temp_site_info:
                             temp_site_info[site] = temp_site_info[site] | tumor_ids
                         else:
                             temp_site_info[site] = tumor_ids
                 # parse the temp_site_info
                 site_list = []
-                for site,tumor_ids in temp_site_info.iteritems():
+                for site,tumor_ids in temp_site_info.items():
                     site_list.append(site + '=' + str(len(tumor_ids)))
                 var_line_ele.append(';'.join(site_list))
                 # check if outbuffer is full
@@ -160,7 +157,7 @@ def get_sites_per_variant(unique_variants, sites, output_file):
         outf.write('\n'.join(outbuffer) + '\n')
         # clear the buffer
         del outbuffer[:]
-        print('Cosmic files processed. Cosmic mutation and site counts written to {0}.'.format(output_file)) 
+        print(f'Cosmic files processed. Cosmic mutation and site counts written to {output_file}.')
         
 
 def get_gzip_app():
@@ -177,8 +174,9 @@ def get_gzip_app():
 def read_vcf(vcf_file):
     with gzip.open(vcf_file, 'rb') as vcf:
         for line in vcf:
-            if not line.startswith('#'):
-                yield line
+            linestr = line.decode('UTF-8')
+            if not linestr.startswith('#'):
+                yield linestr
 
 
 def read_sites_file(filename):
