@@ -52,9 +52,7 @@ def process_cosmic_db(args):
 
 @jit(nopython=True)
 def process_vcf(vcf_file, unique_variants, truncate_large_var, max_allele_len):
-    gz_decomp = get_gzip_app()
-    print('Calculating file size...')
-    row_count = int(sh.bash("-c", f"{gz_decomp} {vcf_file} | wc -l"))
+    row_count = get_file_row_count(vcf_file)
     print('Parsing coding cosmic VCF file...')
     counter = 0
     with progressbar.ProgressBar(max_value=row_count) as pbar:
@@ -74,16 +72,12 @@ def process_vcf(vcf_file, unique_variants, truncate_large_var, max_allele_len):
     print('Parsing complete.')
     
 @jit(nopython=True)
-def process_mut_export(filename, sites):
+def process_mut_export(cosmic_export, sites):
     # run a shell command to create intermediate file
     sites_file = 'sites.tmp'
-    print('Preprocessing cosmic mutant export file...')
-    # check operating system
-    gz_decomp = get_gzip_app()
-    sh.bash("-c", f"{gz_decomp} {filename} | cut -f 7,8,17 >{sites_file}")
     print('Calculating file size...')
-    row_count = int(sh.bash("-c", f"cat {sites_file} | wc -l"))
-    
+    row_count = get_file_row_count(sites_file)
+    generate_site_file(cosmic_export, sites_file)
     # parse the intermediate file
     print ('Parsing intermediate file...')
     counter = 0
@@ -170,6 +164,20 @@ def get_gzip_app():
     else:
         pass
     return gz_app
+
+
+def get_file_row_count(filename):
+    gz_decomp = get_gzip_app()
+    print('Calculating number of variants...')
+    return int(sh.bash("-c", f"{gz_decomp} {filename} | wc -l"))
+
+
+def generate_site_file(cosmic_export, sites_file):
+    print('Preprocessing cosmic mutant export file...')
+    # check operating system
+    gz_decomp = get_gzip_app()
+    sh.bash("-c", f"{gz_decomp} {cosmic_export} | cut -f 7,8,17 >{sites_file}")
+
 
 @jit(nopython=True)
 def read_vcf(vcf_file):
