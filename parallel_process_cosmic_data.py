@@ -79,15 +79,11 @@ def process_cosmic_db(args):
 def process_cosmic_vcf(filename, unique_variants, chunk_start, chunk_size, truncate_large_var):
     with gzip.open(filename, 'r') as f:
         f.seek(chunk_start)
+        print (f'Starting at position: {str(chunk_start)} for size: {str(chunk_size)}...')
         lines = f.read(chunk_size).decode('UTF-8').splitlines()
-        with progressbar.ProgressBar(max_value=len(lines)) as pbar:
-            counter = 0
-            for line in lines:
-                if not line.startswith('#'):
-                    process_vcf_record(line, unique_variants, truncate_large_var)
-                counter += 1
-                pbar.update(counter)
-
+        for line in lines:
+            if not line.startswith('#'):
+                process_vcf_record(line, unique_variants, truncate_large_var)
 
 def process_vcf_record(vcf_record, unique_variants, truncate_large_var):
     temp_arr = vcf_record.split('\t')
