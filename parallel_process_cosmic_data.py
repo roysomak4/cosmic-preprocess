@@ -48,7 +48,7 @@ def process_cosmic_db(args):
     unique_variants = mp_manager.dict()
     
     # create multiprocessing pool
-    pool = mp.Pool(6)
+    pool = mp.Pool(20)
     jobs = []
 
     # create vcf processing jobs
@@ -221,7 +221,7 @@ def read_sites_file(filename):
                 yield line
 
 
-def data_chunks(filename, size=1000*1024*1024):
+def data_chunks(filename, size=10*1024*1024):
     '''
     Considerations
     1. In python3 relative seeking in non-binary mode is not possible.
