@@ -233,9 +233,9 @@ def data_chunks(filename, size=1024*1024):
     '''
     #file_end = os.path.getsize(filename)
     with gzip.open(filename, 'r') as f:
-        chuck_end = f.tell()
+        chunk_end = f.tell()
         while True:
-            chunk_start = chuck_end
+            chunk_start = chunk_end
             f.seek(size, 1)
             f.readline()
             chunk_end = f.tell()
