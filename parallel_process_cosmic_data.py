@@ -220,7 +220,7 @@ def read_sites_file(filename):
                 yield line
 
 
-def data_chunks(filename, size=1024*1024):
+def data_chunks(filename, size=1000*1024*1024):
     '''
     Considerations
     1. In python3 relative seeking in non-binary mode is not possible.
