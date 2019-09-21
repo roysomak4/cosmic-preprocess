@@ -84,6 +84,7 @@ def process_cosmic_vcf(filename, unique_variants, chunk_start, chunk_size, trunc
         for line in lines:
             if not line.startswith('#'):
                 process_vcf_record(line, unique_variants, truncate_large_var)
+        print(f'Finished processing from {str(chunk_start)} to {str(chunk_size + chunk_start)}')
 
 def process_vcf_record(vcf_record, unique_variants, truncate_large_var):
     temp_arr = vcf_record.split('\t')
