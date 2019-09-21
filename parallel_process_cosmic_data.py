@@ -6,9 +6,12 @@ import sh
 import progressbar
 import multiprocessing as mp
 
-
+# instantiate multiprocessing manager function
+mp_manager = mp.Manager()
+    
 # global variables
 max_allele_len = 1000
+unique_variants = mp_manager.dict()
 
 def process_cosmic_db(args):
     if len(args) < 2:
@@ -41,12 +44,6 @@ def process_cosmic_db(args):
     # cosmic processed file
     cosmic_output_file = "cosmic_processed.txt.gz"
 
-    # instantiate multiprocessing manager function
-    mp_manager = mp.Manager()
-
-    # process vcf file first
-    unique_variants = mp_manager.dict()
-    
     # create multiprocessing pool
     pool = mp.Pool(20)
     jobs = []
@@ -55,7 +52,6 @@ def process_cosmic_db(args):
     for chunk_start, chunk_size in data_chunks(cosmic_coding_vcf):
         jobs.append(pool.apply_async(process_cosmic_vcf,
                                     (cosmic_coding_vcf,
-                                    unique_variants,
                                     chunk_start,
                                     chunk_size,
                                     truncate_large_var)
@@ -76,17 +72,17 @@ def process_cosmic_db(args):
     # get_sites_per_variant(unique_variants, sites, cosmic_output_file)
 
 
-def process_cosmic_vcf(filename, unique_variants, chunk_start, chunk_size, truncate_large_var):
+def process_cosmic_vcf(filename, chunk_start, chunk_size, truncate_large_var):
     with gzip.open(filename, 'r') as f:
         f.seek(chunk_start)
         print (f'Starting at position: {str(chunk_start)} for size: {str(chunk_size)}...')
         lines = f.read(chunk_size).decode('UTF-8').splitlines()
-        for line in lines:
-            if not line.startswith('#'):
-                process_vcf_record(line, unique_variants, truncate_large_var)
-        print(f'Finished processing from {str(chunk_start)} to {str(chunk_size + chunk_start)}')
+    for line in lines:
+        if not line.startswith('#'):
+            process_vcf_record(line, truncate_large_var)
+    print(f'Finished processing from {str(chunk_start)} to {str(chunk_size + chunk_start)}')
 
-def process_vcf_record(vcf_record, unique_variants, truncate_large_var):
+def process_vcf_record(vcf_record, truncate_large_var):
     temp_arr = vcf_record.split('\t')
     variant = temp_arr[0] + ':' + temp_arr[1] + ':' + temp_arr[3] + ':' + temp_arr[4]
     cosmic_id = temp_arr[2]
@@ -221,7 +217,7 @@ def read_sites_file(filename):
                 yield line
 
 
-def data_chunks(filename, size=10*1024*1024):
+def data_chunks(filename, size=1024):
     '''
     Considerations
     1. In python3 relative seeking in non-binary mode is not possible.
