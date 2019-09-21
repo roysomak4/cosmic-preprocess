@@ -83,7 +83,8 @@ def process_cosmic_vcf(filename, unique_variants, chunk_start, chunk_size, trunc
         with progressbar.ProgressBar(max_value=len(lines)) as pbar:
             counter = 0
             for line in lines:
-                process_vcf_record(line, unique_variants, truncate_large_var)
+                if not line.startswith('#'):
+                    process_vcf_record(line, unique_variants, truncate_large_var)
                 counter += 1
                 pbar.update(counter)
 
@@ -224,7 +225,17 @@ def read_sites_file(filename):
 
 
 def data_chunks(filename, size=1024*1024):
-    file_end = os.path.getsize(filename)
+    '''
+    Considerations
+    1. In python3 relative seeking in non-binary mode is not possible.
+    Therefore we will be using gzipped files
+    2. os.path.getsize() function on a gzipped file returns the byte size
+    of the compressed file which does not match with the length of the
+    uncompressed gzip file stream. 
+    Therefore we will be using seek to get the size of the file and then 
+    iterate over
+    '''
+    #file_end = os.path.getsize(filename)
     with gzip.open(filename, 'r') as f:
         chuck_end = f.tell()
         while True:
@@ -232,10 +243,11 @@ def data_chunks(filename, size=1024*1024):
             f.seek(size, 1)
             f.readline()
             chunk_end = f.tell()
-            yield chunk_start, chunk_end - chunk_start
-            if chunk_end > file_end:
+            if chunk_end - chunk_start > 0:
+                yield chunk_start, chunk_end - chunk_start
+            else:
                 break
-
+            
 
 if __name__ == '__main__':
     process_cosmic_db(sys.argv[1:])
