@@ -15,6 +15,7 @@ eggs/
 parts/
 sdist/
 var/
+data/
 npm-debug.log
 *.egg-info/
 .installed.cfg
@@ -47,6 +48,7 @@ docs/_build/
 *.tmproj
 *.tmproject
 tmtags
+.vscode/
 
 # App ignores.
 instance/settings.py

@@ -54,7 +54,7 @@ def process_vcf(vcf_file, unique_variants, truncate_large_var, max_allele_len):
     row_count = get_file_row_count(vcf_file)
     print('Parsing coding cosmic VCF file...')
     counter = 0
-    with progressbar.ProgressBar(max_value=row_count) as pbar:
+    with progressbar.ProgressBar(max_value=row_count, widgets=pbar_widget()) as pbar:
         for vcf_entry in read_vcf(vcf_file):
             temp_arr = vcf_entry.split('\t')
             variant = temp_arr[0] + ':' + temp_arr[1] + ':' + temp_arr[3] + ':' + temp_arr[4]
@@ -73,19 +73,19 @@ def process_vcf(vcf_file, unique_variants, truncate_large_var, max_allele_len):
 
 def process_mut_export(cosmic_export, sites):
     # run a shell command to create intermediate file
-    sites_file = 'sites.tmp'
+    # sites_file = 'sites.tmp'
     print('Calculating file size...')
-    row_count = get_file_row_count(sites_file)
-    generate_site_file(cosmic_export, sites_file)
+    row_count = get_file_row_count(cosmic_export)
+    #generate_site_file(cosmic_export, sites_file)
     # parse the intermediate file
     print ('Parsing intermediate file...')
     counter = 0
-    with progressbar.ProgressBar(max_value=row_count) as pbar:
-        for sites_item in read_sites_file(sites_file):
+    with progressbar.ProgressBar(max_value=row_count, widgets=pbar_widget()) as pbar:
+        for sites_item in read_exports_file(cosmic_export):
             temp_arr = sites_item.strip('\n').split('\t')
-            cosmic_id = temp_arr[2]
-            site = temp_arr[1]
-            tumor_id = temp_arr[0]
+            cosmic_id = temp_arr[16]
+            site = temp_arr[7]
+            tumor_id = temp_arr[6]
             if cosmic_id in sites:
                 if site in sites[cosmic_id]:
                     sites[cosmic_id][site].add(tumor_id)
@@ -98,8 +98,8 @@ def process_mut_export(cosmic_export, sites):
             counter += 1
             pbar.update(counter)
     print('Parsing complete.')
-    print('Removing temporary file...')
-    sh.rm(sites_file)
+    # print('Removing temporary file...')
+    # sh.rm(sites_file)
     
 
 def get_sites_per_variant(unique_variants, sites, output_file):
@@ -112,7 +112,7 @@ def get_sites_per_variant(unique_variants, sites, output_file):
         # parse the unique variant list
         counter = 0
         var_count = len(unique_variants)
-        with progressbar.ProgressBar(max_value=var_count) as pbar:
+        with progressbar.ProgressBar(max_value=var_count, widgets=pbar_widget()) as pbar:
             for variant, ids in unique_variants.items():
                 # hold column element of each row in a list
                 var_line_ele = variant.split(':')
@@ -186,11 +186,27 @@ def read_vcf(vcf_file):
                 yield linestr
 
 
+def read_exports_file(filename):
+    with gzip.open(filename, 'rb') as input_file:
+        for line in input_file:
+            linestr = line.decode('UTF-8')
+            if not 'Primary' in linestr:
+                yield linestr
+
+
 def read_sites_file(filename):
     with open(filename, 'r') as input_file:
         for line in input_file:
             if not 'Primary' in line:
                 yield line
+
+
+def pbar_widget():
+    return [
+        '[', progressbar.Percentage(), ' (', progressbar.Counter(), ')]',
+        progressbar.Bar(marker='>'),
+        '[', progressbar.AdaptiveETA(), ']',
+    ]
 
 
 if __name__ == '__main__':
