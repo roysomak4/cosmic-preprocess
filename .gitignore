@@ -47,6 +47,7 @@ docs/_build/
 *.tmproj
 *.tmproject
 tmtags
+.vscode
 
 # App ignores.
 instance/settings.py
