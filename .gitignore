@@ -52,3 +52,5 @@ tmtags
 # App ignores.
 instance/settings.py
 
+# example data
+example/
